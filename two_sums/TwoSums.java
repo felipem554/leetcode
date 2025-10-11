@@ -2,7 +2,7 @@
 import java.util.Arrays;
 import java.util.HashMap;
 
-public class Main {
+public class TwoSums {
     public static void main(String[] args) {
 
         int[] nums1 = {72, 15, 92, 53, 47, 8, 66, 39, 85, 10, 28, 99, 4, 61, 35};
