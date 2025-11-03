@@ -40,5 +40,3 @@ New problems are added occasionally.
 **Author:** [@felipem554](https://github.com/felipem554)
 
 ---
-
-Would you like me to make it slightly more “polished” (with badges or one-line explanations per folder), or keep it minimal like this?
