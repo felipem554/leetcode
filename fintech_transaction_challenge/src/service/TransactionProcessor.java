@@ -49,11 +49,11 @@ public class TransactionProcessor {
         return true;
     }
 
-    private BigDecimal getAccountBalance(Account account){
+    public BigDecimal getAccountBalance(Account account){
 
         List<Transaction> accountTransactions = history.stream()
                 .filter(
-                        transaction -> !transaction.getStatus().equals(Transaction.Status.DECLINED) &&
+                        transaction -> (transaction.getStatus().equals(Transaction.Status.FLAG) || transaction.getStatus().equals(Transaction.Status.APPROVED)) &&
                             (transaction.getSender().getId().equals(account.getId())
                                         || transaction.getReceiver().getId().equals(account.getId())))
                 .toList();
@@ -61,12 +61,16 @@ public class TransactionProcessor {
         BigDecimal balance = BigDecimal.ZERO;
 
         for (Transaction transaction : accountTransactions) {
-            balance.add(transaction.getAmount());
+            if(transaction.getSender().getId().equals(account.getId())){
+                balance = balance.subtract(transaction.getAmount());
+            } else {
+                balance = balance.add(transaction.getAmount());
+            }
         }
         return balance;
     }
 
-    private List<Transaction> getRecentAccountTransactions(Account account, int seconds){
+    public List<Transaction> getRecentAccountTransactions(Account account, int seconds){
 
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime secondsAgo = now.minusSeconds(seconds);
@@ -75,4 +79,27 @@ public class TransactionProcessor {
                 transaction.getSender().getId().equals(account.getId())
                         && transaction.getTimestamp().isAfter(secondsAgo)).toList();
     }
+
+//    Account summary for a given account: total sent, total received, current balance
+//    Compliance queue: all payments that were flagged
+//    Top spenders: the N accounts that have sent the most money (approved + flagged only)
+    public record AccountSummary { BigDecimal totalSent, BigDecimal totalReceived, BigDecimal currentBalance, Account account};
+
+
+    public List<AccountSummary> getAccountSumary(Account account) {
+        List<Transaction> accountTransactions = history.stream().filter(transaction -> transaction.getSender().getId().equals(account.getId()) || transaction.getReceiver() transaction.getStatus().equals(Transaction.Status.FLAG || Transaction.Status.APPROVED));
+    }
+
+    public List<Transaction> getComplianceQueue(){
+        return history.stream().filter(transaction -> transaction.getStatus().equals(Transaction.Status.FLAG));
+    }
+
+    //of all time? not written in the challenge
+    public List<TopSpendersAccount> getTopSpenders(){
+
+    }
+
+//    Account summary for a given account: total sent, total received, current balance
+//    Compliance queue: all payments that were flagged
+//    Top spenders: the N accounts that have sent the most money (approved + flagged only)
 }
