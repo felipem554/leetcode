@@ -29,6 +29,10 @@ public class Transaction {
         this.status = status;
     }
 
+    public UUID getIdentifier() {
+        return identifier;
+    }
+
     public BigDecimal getAmount() {
         return amount;
     }
