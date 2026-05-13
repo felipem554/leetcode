@@ -120,26 +120,28 @@ public class TransactionProcessor {
                 .toList();
     }
 
-    public record TopSpendersAccount(UUID id, BigDecimal totalSent, BigDecimal totalReceived, BigDecimal currentBalance, Account account){};
+    public record TopSpendersAccount(UUID id, BigDecimal totalSent){};
 
     //of all time? not written in the challenge
     // maybe use two threads here? break the history in half and each half goes to a thread to speed the sum of the top spenders.
     public List<TopSpendersAccount> getTopSpenders(int numberOfTopSpenders, long daysAgo){
-
+//        (UUID identifier, Account sender, Account receiver, BigDecimal amount, LocalDateTime timestamp, Transaction.Status
+//        status)
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime minusesDaysTime = now.minusDays(daysAgo);
 
         List<Transaction> transactions = history.stream().filter(transaction -> (transaction.getStatus().equals(Transaction.Status.APPROVED)
                     || transaction.getStatus().equals(Transaction.Status.FLAG))
                     && transaction.getTimestamp().isAfter(minusesDaysTime))
-                .collect(Collectors.groupingBy(transaction -> transaction.getSender().getId(), Collectors.collectingAndThen(Collectors.reducing((a,b) ->
-                        new TopSpendersAccount(a.getSender().getId(), a);
+                .collect(Collectors.groupingBy(transaction -> transaction.getSender(), Collectors.collectingAndThen(
+                        Collectors.reducing((a,b) ->
+                            new Transaction(a.getSender().getId(), a.getAmount().add(b.getAmount()))), Optional::get)))
+                .forEach(id, TopSpendersAccount) -> {}};). Option.;
                         collectingAndThen() Collectors.summingDouble(trans)))
                 ) transaction -> transaction.getSender().getId()))
 
             }
         }
-    }
     }
 
 //    Account summary for a given account: total sent, total received, current balance
