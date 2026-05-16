@@ -1,0 +1,10 @@
+# Compiled output
+out/
+*.class
+
+# JUnit jar (download instructions in README.md)
+lib/
+
+# IntelliJ
+.idea/
+*.iml
