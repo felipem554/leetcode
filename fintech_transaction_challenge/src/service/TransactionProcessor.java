@@ -16,7 +16,8 @@ public class TransactionProcessor {
 
     //using in memory DB
     // not sure if this is the best data structure to our problem
-    private final ConcurrentLinkedQueue<Transaction> history = new ConcurrentLinkedQueue<>();
+    // PUBLIC FOR TESTING ONLY!!!
+    public final ConcurrentLinkedQueue<Transaction> history = new ConcurrentLinkedQueue<>();
 
     public Transaction processTransaction(Transaction transaction){
 
@@ -66,10 +67,17 @@ public class TransactionProcessor {
                 balance = balance.add(transaction.getAmount());
             }
         }
+
+        //TODO Testing only!!!x`
+        balance = balance.add(account.getStartingBalance());
+        //
+
         return balance;
     }
 
     public List<Transaction> getRecentAccountTransactions(Account account, int seconds){
+
+        //maybe create a dto to nao send back full transaction data structure
 
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime secondsAgo = now.minusSeconds(seconds);
@@ -84,8 +92,7 @@ public class TransactionProcessor {
 //    Top spenders: the N accounts that have sent the most money (approved + flagged only)
 
     //Using a record could be a problem to run in java 11...
-    public record AccountSummary(BigDecimal totalSent, BigDecimal totalReceived, BigDecimal currentBalance, Account account, int daysAgo){};
-
+    public record AccountSummary(BigDecimal totalSent, BigDecimal totalReceived, BigDecimal currentBalance, Account account){ };
 
     public AccountSummary getAccountSumary(Account account) {
 
@@ -111,7 +118,7 @@ public class TransactionProcessor {
 
         BigDecimal currentBalance = getAccountBalance(account);
 
-        return new AccountSummary(totalSent, totalReceived, currentBalance, account, );
+        return new AccountSummary(totalSent, totalReceived, currentBalance, account);
     }
 
     public List<Transaction> getComplianceQueue(){
@@ -123,28 +130,21 @@ public class TransactionProcessor {
     public record TopSpendersAccount(UUID id, BigDecimal totalSent){};
 
     //of all time? not written in the challenge
-    // maybe use two threads here? break the history in half and each half goes to a thread to speed the sum of the top spenders.
+    // maybe use two threads here? break the history in half and each half goes to a thread to speed the sum of the top spenders.(heavy load function) (dont know how to implement thread to be faster here... or if this is a good idea here)
     public List<TopSpendersAccount> getTopSpenders(int numberOfTopSpenders, long daysAgo){
-//        (UUID identifier, Account sender, Account receiver, BigDecimal amount, LocalDateTime timestamp, Transaction.Status
-//        status)
+
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime minusesDaysTime = now.minusDays(daysAgo);
 
-        List<Transaction> transactions = history.stream().filter(transaction -> (transaction.getStatus().equals(Transaction.Status.APPROVED)
+        return history.stream().filter(transaction -> (transaction.getStatus().equals(Transaction.Status.APPROVED)
                     || transaction.getStatus().equals(Transaction.Status.FLAG))
                     && transaction.getTimestamp().isAfter(minusesDaysTime))
-                .collect(Collectors.groupingBy(transaction -> transaction.getSender(), Collectors.collectingAndThen(
-                        Collectors.reducing((a,b) ->
-                            new Transaction(a.getSender().getId(), a.getAmount().add(b.getAmount()))), Optional::get)))
-                .forEach(id, TopSpendersAccount) -> {}};). Option.;
-                        collectingAndThen() Collectors.summingDouble(trans)))
-                ) transaction -> transaction.getSender().getId()))
-
-            }
-        }
+                .collect(Collectors.groupingBy(transaction -> transaction.getSender().getId(), Collectors.reducing(
+                        BigDecimal.ZERO, Transaction::getAmount, BigDecimal::add)))
+                .entrySet().stream()
+                        .map(entry -> new TopSpendersAccount(entry.getKey(), entry.getValue()))
+                                .sorted(Comparator.comparing(TopSpendersAccount::totalSent)
+                                        .reversed()).limit(numberOfTopSpenders)
+                .toList();
     }
-
-//    Account summary for a given account: total sent, total received, current balance
-//    Compliance queue: all payments that were flagged
-//    Top spenders: the N accounts that have sent the most money (approved + flagged only)
 }
