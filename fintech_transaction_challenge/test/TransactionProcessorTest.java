@@ -88,6 +88,16 @@ public class TransactionProcessorTest {
         assertEquals(Transaction.Status.FLAG, t.getStatus());
     }
 
+    // --- processTransaction: flag guard (regression for missing !DECLINED check) ---
+
+    @Test
+    void processTransaction_doesNotFlag_declinedTransactionWithLargeAmount() {
+        Account alice = new Account("Alice", UUID.randomUUID(), new BigDecimal("100.00"));
+        Transaction transaction = processor.processTransaction(build(alice, receiver, "10000.00"));
+        assertEquals(Transaction.Status.DECLINED, transaction.getStatus());
+        assertTrue(processor.history.isEmpty());
+    }
+
     // --- processTransaction: approve (added) ---
 
     @Test

@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 
 public class TransactionProcessor {
 
-    //using in memory DB
+    // using in memory DB
     // not sure if this is the best data structure to our problem
     // PUBLIC FOR TESTING ONLY!!!
     public final ConcurrentLinkedQueue<Transaction> history = new ConcurrentLinkedQueue<>();
@@ -22,12 +22,14 @@ public class TransactionProcessor {
             return null;
         }
 
-        if (transaction.getAmount().compareTo(BigDecimal.ZERO) < 1 || !checkIfAccountHasFunds(transaction.getSender(), transaction.getAmount())){
+        if (transaction.getAmount().compareTo(BigDecimal.ZERO) < 1
+                || !checkIfAccountHasFunds(transaction.getSender(), transaction.getAmount())){
             transaction.setStatus(Transaction.Status.DECLINED);
         }
 
-        if (transaction.getAmount().compareTo(new BigDecimal(10000)) >= 0
-                || getRecentAccountTransactions(transaction.getSender(), 60).size() > 3){
+        if (!transaction.getStatus().equals(Transaction.Status.DECLINED)
+                && (transaction.getAmount().compareTo(new BigDecimal(10000)) >= 0
+                || getRecentAccountTransactions(transaction.getSender(), 60).size() > 3)){
             transaction.setStatus(Transaction.Status.FLAG);
             history.add(transaction);
         }
