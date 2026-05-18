@@ -1,0 +1,10 @@
+# Compiled output
+*.class
+out/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# macOS
+.DS_Store
