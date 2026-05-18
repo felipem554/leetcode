@@ -4,12 +4,9 @@ import model.Account;
 import model.Transaction;
 
 import java.math.BigDecimal;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class TransactionProcessor {
@@ -25,7 +22,7 @@ public class TransactionProcessor {
             return null;
         }
 
-        if (transaction.getAmount().compareTo(BigDecimal.ZERO) < 1 || checkIfAccountHasFunds(transaction.getSender(), transaction.getAmount())){
+        if (transaction.getAmount().compareTo(BigDecimal.ZERO) < 1 || !checkIfAccountHasFunds(transaction.getSender(), transaction.getAmount())){
             transaction.setStatus(Transaction.Status.DECLINED);
         }
 
@@ -68,7 +65,7 @@ public class TransactionProcessor {
             }
         }
 
-        //TODO Testing only!!!x`
+        //TODO Testing only!!!
         balance = balance.add(account.getStartingBalance());
         //
 
@@ -97,14 +94,15 @@ public class TransactionProcessor {
     public AccountSummary getAccountSumary(Account account) {
 
         List<Transaction> debitTransactions = history.stream().filter(transaction ->
-                transaction.getSender().getId().equals(account.getId())
-                        && (transaction.getStatus().equals(Transaction.Status.FLAG)) || transaction.getStatus().equals(Transaction.Status.APPROVED))
+                        transaction.getSender().getId().equals(account.getId())
+                                && (transaction.getStatus().equals(Transaction.Status.FLAG) || transaction.getStatus().equals(Transaction.Status.APPROVED)))
                 .toList();
 
         List<Transaction> creditTransactions = history.stream().filter(transaction ->
                         transaction.getReceiver().getId().equals(account.getId())
-                                && (transaction.getStatus().equals(Transaction.Status.FLAG)) || transaction.getStatus().equals(Transaction.Status.APPROVED))
+                                && (transaction.getStatus().equals(Transaction.Status.FLAG) || transaction.getStatus().equals(Transaction.Status.APPROVED)))
                 .toList();
+
 
         BigDecimal totalSent = BigDecimal.ZERO;
         for (Transaction transaction : debitTransactions) {

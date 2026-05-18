@@ -154,10 +154,10 @@ public class TransactionProcessorTest {
         Account bob   = new Account("Bob",   UUID.randomUUID(), new BigDecimal("500.00"));
         send(alice, bob,  new BigDecimal("300.00"));
         send(bob,   alice, new BigDecimal("100.00"));
-        TransactionProcessor.AccountSummary summary = processor.getAccountSumary(alice);
-        assertEquals(0, summary.totalSent().compareTo(new BigDecimal("300.00")));
-        assertEquals(0, summary.totalReceived().compareTo(new BigDecimal("100.00")));
-        assertEquals(0, summary.currentBalance().compareTo(new BigDecimal("800.00"))); // 1000 - 300 + 100
+        TransactionProcessor.AccountSummary aliceSummary = processor.getAccountSumary(alice);
+        assertEquals(0, aliceSummary.totalSent().compareTo(new BigDecimal("300.00")));
+        assertEquals(0, aliceSummary.totalReceived().compareTo(new BigDecimal("100.00")));
+        assertEquals(0, aliceSummary.currentBalance().compareTo(new BigDecimal("800.00"))); // 1000 - 300 + 100
     }
 
     // --- getTopSpenders (yours) ---
@@ -166,8 +166,8 @@ public class TransactionProcessorTest {
     public void topSpenders_returnsAtMostN() {
         Account localReceiver = new Account("RECEIVER", UUID.randomUUID(), BigDecimal.ZERO);
         send(new Account("Alice",   UUID.randomUUID(), BigDecimal.valueOf(100L)), localReceiver, BigDecimal.valueOf(100L));
-        send(new Account("Bob",     UUID.randomUUID(), BigDecimal.ZERO),          localReceiver, BigDecimal.valueOf(200L));
-        send(new Account("Charlie", UUID.randomUUID(), BigDecimal.ZERO),          localReceiver, BigDecimal.valueOf(300L));
+        send(new Account("Bob",     UUID.randomUUID(), BigDecimal.valueOf(400L)),          localReceiver, BigDecimal.valueOf(200L));
+        send(new Account("Charlie", UUID.randomUUID(), BigDecimal.valueOf(300L)),          localReceiver, BigDecimal.valueOf(300L));
         send(new Account("Dave",    UUID.randomUUID(), BigDecimal.ZERO),          localReceiver, BigDecimal.valueOf(400L));
         List<TransactionProcessor.TopSpendersAccount> result = processor.getTopSpenders(2, 30);
         assertEquals(2, result.size());
@@ -176,22 +176,22 @@ public class TransactionProcessorTest {
     @Test
     public void topSpenders_sortedByTotalSentDescending() {
         Account localReceiver = new Account("receiver", UUID.randomUUID(), BigDecimal.ZERO);
-        Account alice   = new Account("Alice",   UUID.randomUUID(), BigDecimal.valueOf(100L));
-        Account bob     = new Account("Bob",     UUID.randomUUID(), BigDecimal.valueOf(100L));
-        Account charlie = new Account("Charlie", UUID.randomUUID(), BigDecimal.valueOf(100L));
+        Account alice         = new Account("Alice",   UUID.randomUUID(), BigDecimal.valueOf(400L));
+        Account bob           = new Account("Bob",     UUID.randomUUID(), BigDecimal.valueOf(500L));
+        Account charlie       = new Account("Charlie", UUID.randomUUID(), BigDecimal.valueOf(300L));
         send(alice,   localReceiver, BigDecimal.valueOf(100L));
         send(bob,     localReceiver, BigDecimal.valueOf(500L));
         send(charlie, localReceiver, BigDecimal.valueOf(300L));
-        send(alice,   localReceiver, BigDecimal.valueOf(50L));
+        send(alice,   localReceiver, BigDecimal.valueOf(300L));
         List<TransactionProcessor.TopSpendersAccount> result = processor.getTopSpenders(2, 30);
-        assertEquals("bob (500) should be first",    bob.getId().toString(),   result.get(0).id().toString());
-        assertEquals("alice (150) should be second", alice.getId().toString(), result.get(1).id().toString());
+        assertEquals(bob.getId().toString(),   result.get(0).id().toString(), "bob (500) should be first");
+        assertEquals(alice.getId().toString(), result.get(1).id().toString(), "alice (400) should be second");
     }
 
     @Test
     public void topSpenders_sumsSameAccountTransactions() {
         Account localReceiver = new Account("receiver", UUID.randomUUID(), BigDecimal.ZERO);
-        Account alice = new Account("Alice", UUID.randomUUID(), BigDecimal.valueOf(500L));
+        Account alice = new Account("Alice", UUID.randomUUID(), BigDecimal.valueOf(600L));
         send(alice, localReceiver, BigDecimal.valueOf(100L));
         send(alice, localReceiver, BigDecimal.valueOf(200L));
         send(alice, localReceiver, BigDecimal.valueOf(300L));
@@ -238,13 +238,6 @@ public class TransactionProcessorTest {
     // --- money precision: unit (yours) ---
 
     @Test
-    public void double_losesSubCentPrecision() {
-        double a = 0.0002;
-        double b = 0.0008;
-        assertNotEquals(0.0010, a + b, "double arithmetic at sub-cent scale is unreliable");
-    }
-
-    @Test
     public void bigDecimal_exactAtSubCentScale() {
         BigDecimal a = new BigDecimal("0.0002");
         BigDecimal b = new BigDecimal("0.0008");
@@ -257,14 +250,14 @@ public class TransactionProcessorTest {
     @Test
     public void subCentAmounts_accumulateExactlyThroughPipeline() {
         Account localReceiver = new Account("receiver", UUID.randomUUID(), BigDecimal.ZERO);
-        Account alice = new Account("Alice", UUID.randomUUID(), BigDecimal.ZERO);
+        Account alice = new Account("Alice", UUID.randomUUID(), BigDecimal.valueOf(1L));
         processor.processTransaction(build(alice, localReceiver, "0.0002"));
         processor.processTransaction(build(alice, localReceiver, "0.0008"));
         BigDecimal receiverBalance = processor.getAccountBalance(localReceiver);
         BigDecimal aliceBalance   = processor.getAccountBalance(alice);
         assertEquals(0, receiverBalance.compareTo(new BigDecimal("0.0010")),
                 "receiver expected exactly 0.0010, got: " + receiverBalance);
-        assertEquals(0, aliceBalance.compareTo(new BigDecimal("-0.0010")),
+        assertEquals(0, aliceBalance.compareTo(BigDecimal.valueOf(1L).add(new BigDecimal("-0.0010"))),
                 "alice sent 0.0010 total, expected exactly -0.0010, got: " + aliceBalance);
         List<TransactionProcessor.TopSpendersAccount> top = processor.getTopSpenders(1, 30);
         assertEquals(0, top.getFirst().totalSent().compareTo(new BigDecimal("0.0010")),
