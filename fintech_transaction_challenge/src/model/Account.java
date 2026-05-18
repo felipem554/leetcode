@@ -5,37 +5,43 @@ import java.util.UUID;
 
 public class Account {
 
-    private String nome;
-    private UUID id;
+    private String name;
+
+    //should be final? not sure
+    private final UUID id;
 
     // TODO - TESTING!
     private BigDecimal startingBalance;
 
-    public Account(String nome, UUID id, BigDecimal startingBalance){
-        this.nome = nome;
+    public Account(String name, UUID id, BigDecimal startingBalance){
+        this.name = name;
         this.id = id;
         this.startingBalance = startingBalance;
     }
 
-    public Account(String nome, UUID id) {
-        this.nome = nome;
+    public Account(String name, UUID id) {
+        this.name = name;
         this.id = id;
+    }
+
+    public Account(String name) {
+        this.name = name;
+        this.id = UUID.randomUUID();
     }
 
     public BigDecimal getStartingBalance() {
         return startingBalance;
     }
-    //
 
-    public String getNome() {
-        return nome;
+    public String getName() {
+        return name;
     }
 
     public UUID getId() {
         return id;
     }
 
-    public void setNome(String nome) {
-        this.nome = nome;
+    public void setName(String name) {
+        this.name = name;
     }
 }

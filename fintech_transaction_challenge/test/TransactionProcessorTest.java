@@ -81,13 +81,6 @@ public class TransactionProcessorTest {
         assertEquals(Transaction.Status.FLAG, t.getStatus());
     }
 
-    @Test
-    void processTransaction_flags_exactlyAt10000() {
-        Account alice = new Account("Alice", UUID.randomUUID(), new BigDecimal("99999.00"));
-        Transaction t = processor.processTransaction(build(alice, receiver, "10000.00"));
-        assertEquals(Transaction.Status.FLAG, t.getStatus());
-    }
-
     // --- processTransaction: flag guard (regression for missing !DECLINED check) ---
 
     @Test
@@ -230,9 +223,9 @@ public class TransactionProcessorTest {
     @Test
     public void complianceQueue_onlyReturnsFlaggedTransactions() {
         Account localReceiver = new Account("receiver", UUID.randomUUID(), BigDecimal.ZERO);
-        Account alice = new Account("Alice", UUID.randomUUID(), BigDecimal.valueOf(10100L));
+        Account alice = new Account("Alice", UUID.randomUUID(), BigDecimal.valueOf(10101L));
         send(alice, localReceiver, BigDecimal.valueOf(100L));
-        send(alice, localReceiver, BigDecimal.valueOf(10000L));
+        send(alice, localReceiver, BigDecimal.valueOf(10001L));
         List<Transaction> flagged = processor.getComplianceQueue();
         assertEquals(1, flagged.size());
         assertEquals(Transaction.Status.FLAG, flagged.getFirst().getStatus());

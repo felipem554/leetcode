@@ -12,6 +12,8 @@ public class Transaction {
     private final Account sender;
     private final Account receiver;
     private final BigDecimal amount;
+
+    //best way to store currency? not sure
     private final Character[] currency = new Character[]{'E', 'U', 'R'};
     private final LocalDateTime timestamp;
     private Status status;

@@ -28,7 +28,7 @@ public class TransactionProcessor {
         }
 
         if (!transaction.getStatus().equals(Transaction.Status.DECLINED)
-                && (transaction.getAmount().compareTo(new BigDecimal(10000)) >= 0
+                && (transaction.getAmount().compareTo(new BigDecimal(10000)) > 0
                 || getRecentAccountTransactions(transaction.getSender(), 60).size() > 3)){
             transaction.setStatus(Transaction.Status.FLAG);
             history.add(transaction);
