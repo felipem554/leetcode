@@ -50,7 +50,7 @@ Balances must be kept accurate as payments are processed.
 
 ---
 
-### 3. Query interface
+### 3. Query interface  
 
 The system must support the following queries at any point:
 
