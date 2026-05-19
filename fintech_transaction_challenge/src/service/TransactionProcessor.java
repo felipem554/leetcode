@@ -1,6 +1,7 @@
 package service;
 
 import model.Account;
+import model.Status;
 import model.Transaction;
 
 import java.math.BigDecimal;
@@ -14,62 +15,60 @@ public class TransactionProcessor {
     // using in memory DB
     // not sure if this is the best data structure to our problem
     // PUBLIC FOR TESTING ONLY!!!
-    public final ConcurrentLinkedQueue<Transaction> history = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<Transaction> history = new ConcurrentLinkedQueue<>();
 
-    public Transaction processTransaction(Transaction transaction){
+    //Why arrays are mutable and Maps not?
+    private final Map<UUID, BigDecimal> startingBalances;
 
-        if (transaction == null){
-            return null;
+    public TransactionProcessor(Map<UUID, BigDecimal> startingBalances){
+        this.startingBalances = Map.copyOf(startingBalances);
+    }
+
+    public Transaction processTransaction(Transaction incoming){
+
+        Status resolvedStatus = determineStatus(incoming);
+        Transaction resolved = new Transaction(incoming.getId(), incoming.getSender(), incoming.getReceiver(), incoming.getAmount(), incoming.getTimestamp(), resolvedStatus);
+
+        if (!resolvedStatus.equals(Status.DECLINED)){
+            history.add(resolved);
         }
+
+        return resolved;
+    }
+
+    private Status determineStatus(Transaction transaction){
 
         if (transaction.getAmount().compareTo(BigDecimal.ZERO) < 1
                 || !checkIfAccountHasFunds(transaction.getSender(), transaction.getAmount())){
-            transaction.setStatus(Transaction.Status.DECLINED);
+            return Status.DECLINED;
         }
 
-        if (!transaction.getStatus().equals(Transaction.Status.DECLINED)
+        // could this code be cleaner? and the seconds should be a variable? anyway? the challenge said to be 60 seconds
+        if (!transaction.getStatus().equals(Status.DECLINED)
                 && (transaction.getAmount().compareTo(new BigDecimal(10000)) > 0
                 || getRecentAccountTransactions(transaction.getSender(), 60).size() > 3)){
-            transaction.setStatus(Transaction.Status.FLAG);
-            history.add(transaction);
+            return Status.FLAG;
         }
 
-        if (transaction.getStatus() == null || transaction.getStatus().equals(Transaction.Status.PENDING)){
-            transaction.setStatus(Transaction.Status.APPROVED);
-            history.add(transaction);
-        }
-
-        return transaction;
+        return Status.APPROVED;
     }
 
     private boolean checkIfAccountHasFunds(Account account, BigDecimal amount){
-
         //Don`t know if this is the best way to compare money
         return getAccountBalance(account).compareTo(amount) >= 0;
     }
 
     public BigDecimal getAccountBalance(Account account){
 
-        List<Transaction> accountTransactions = history.stream()
-                .filter(
-                        transaction -> (transaction.getStatus().equals(Transaction.Status.FLAG) || transaction.getStatus().equals(Transaction.Status.APPROVED)) &&
-                            (transaction.getSender().getId().equals(account.getId())
-                                        || transaction.getReceiver().getId().equals(account.getId())))
-                .toList();
+        BigDecimal balance = startingBalances.getOrDefault(account.getId(), BigDecimal.ZERO);
 
-        BigDecimal balance = BigDecimal.ZERO;
-
-        for (Transaction transaction : accountTransactions) {
-            if(transaction.getSender().getId().equals(account.getId())){
+        for (Transaction transaction : history){
+            if (transaction.getSender().getId().equals(account.getId())){
                 balance = balance.subtract(transaction.getAmount());
-            } else {
+            } else if (transaction.getReceiver().getId().equals(account.getId())){
                 balance = balance.add(transaction.getAmount());
             }
         }
-
-        //TODO Testing only!!!
-        balance = balance.add(account.getStartingBalance());
-        //
 
         return balance;
     }
@@ -97,12 +96,12 @@ public class TransactionProcessor {
 
         List<Transaction> debitTransactions = history.stream().filter(transaction ->
                         transaction.getSender().getId().equals(account.getId())
-                                && (transaction.getStatus().equals(Transaction.Status.FLAG) || transaction.getStatus().equals(Transaction.Status.APPROVED)))
+                                && (transaction.getStatus().equals(Status.FLAG) || transaction.getStatus().equals(Status.APPROVED)))
                 .toList();
 
         List<Transaction> creditTransactions = history.stream().filter(transaction ->
                         transaction.getReceiver().getId().equals(account.getId())
-                                && (transaction.getStatus().equals(Transaction.Status.FLAG) || transaction.getStatus().equals(Transaction.Status.APPROVED)))
+                                && (transaction.getStatus().equals(Status.FLAG) || transaction.getStatus().equals(Status.APPROVED)))
                 .toList();
 
 
@@ -123,7 +122,7 @@ public class TransactionProcessor {
 
     public List<Transaction> getComplianceQueue(){
         return history.stream().filter(transaction ->
-                transaction.getStatus().equals(Transaction.Status.FLAG))
+                transaction.getStatus().equals(Status.FLAG))
                 .toList();
     }
 
@@ -136,8 +135,8 @@ public class TransactionProcessor {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime minusesDaysTime = now.minusDays(daysAgo);
 
-        return history.stream().filter(transaction -> (transaction.getStatus().equals(Transaction.Status.APPROVED)
-                    || transaction.getStatus().equals(Transaction.Status.FLAG))
+        return history.stream().filter(transaction -> (transaction.getStatus().equals(Status.APPROVED)
+                    || transaction.getStatus().equals(Status.FLAG))
                     && transaction.getTimestamp().isAfter(minusesDaysTime))
                 .collect(Collectors.groupingBy(transaction -> transaction.getSender().getId(), Collectors.reducing(
                         BigDecimal.ZERO, Transaction::getAmount, BigDecimal::add)))

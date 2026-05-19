@@ -1,25 +1,15 @@
 package model;
 
-import java.math.BigDecimal;
 import java.util.UUID;
 
 public class Account {
 
     private String name;
 
-    //should be final? not sure
+    //should be final? not sure. Also, I think this should be optional. Normally we don't receice account id by the client, its generated random by the bakcend, right?
     private final UUID id;
 
-    // TODO - TESTING!
-    private BigDecimal startingBalance;
-
-    public Account(String name, UUID id, BigDecimal startingBalance){
-        this.name = name;
-        this.id = id;
-        this.startingBalance = startingBalance;
-    }
-
-    public Account(String name, UUID id) {
+    public Account(String name, UUID id){
         this.name = name;
         this.id = id;
     }
@@ -27,10 +17,6 @@ public class Account {
     public Account(String name) {
         this.name = name;
         this.id = UUID.randomUUID();
-    }
-
-    public BigDecimal getStartingBalance() {
-        return startingBalance;
     }
 
     public String getName() {

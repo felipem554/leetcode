@@ -1,29 +1,21 @@
 package model;
 
 import java.math.BigDecimal;
-import java.sql.Array;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.UUID;
 
 public class Transaction {
 
-    private final UUID identifier;
+    private final UUID id;
     private final Account sender;
     private final Account receiver;
     private final BigDecimal amount;
-
-    //best way to store currency? not sure
-    private final Character[] currency = new Character[]{'E', 'U', 'R'};
+    private final String currency = "EUR";
     private final LocalDateTime timestamp;
-    private Status status;
+    private final Status status;
 
-    public enum Status {
-        PENDING, APPROVED, DECLINED, FLAG
-    }
-
-    public Transaction(UUID identifier, Account sender, Account receiver, BigDecimal amount, LocalDateTime timestamp, Status status) {
-        this.identifier = identifier;
+    public Transaction(UUID id, Account sender, Account receiver, BigDecimal amount, LocalDateTime timestamp, Status status) {
+        this.id = id;
         this.sender = sender;
         this.receiver = receiver;
         this.amount = amount;
@@ -31,8 +23,8 @@ public class Transaction {
         this.status = status;
     }
 
-    public UUID getIdentifier() {
-        return identifier;
+    public UUID getId() {
+        return id;
     }
 
     public BigDecimal getAmount() {
@@ -49,10 +41,6 @@ public class Transaction {
 
     public Status getStatus() {
         return status;
-    }
-
-    public void setStatus(Status status) {
-        this.status = status;
     }
 
     public LocalDateTime getTimestamp(){
